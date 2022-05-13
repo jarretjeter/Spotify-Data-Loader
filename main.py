@@ -75,12 +75,12 @@ class DataLoader():
         db_pass = "mysql"
         db_engine = db_engine(db_host, db_user, db_pass)
 
-        metadata = sa.MetaData(bind=db_engine)
+        meta = sa.MetaData(bind=db_engine)
         logger.info("new metadata")
         conn = db_engine.connect()
         self.engine = db_engine
         self.conn = conn
-        self.metadata = metadata
+        self.meta = meta
 
 
 
@@ -113,12 +113,16 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
         db_engine (SqlAlchemy Engine): SqlAlchemy engine to bind the metadata to.
         drop_first (bool): Drop the tables before creating them again first. Default to False
     """
+    
     meta = sa.MetaData(bind=db_engine)
 
     # your code to define tables go in here
     #   - Be careful, some of the columns like album.available_markets are very long. Make sure you give enough DB length for these. ie: 10240 (10kb)
 
     # your code to drop and create tables go here
+    if drop_first:
+        logger.info("Dropping existing tables")
+        meta.drop_all
 
 
 def main():
