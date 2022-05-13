@@ -126,6 +126,18 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
     meta = sa.MetaData(bind=db_engine)
 
     # your code to define tables go in here
+    logger.info("Creating spotify_artists table")
+    spotify_artists_table = sa.Table("spotify_artists", meta,
+                                sa.Column("id", sa.String(256), primary_key=True),
+                                sa.Column("name", sa.String(256)),
+                                sa.Column("artist_popularity", sa.String(256)),
+                                sa.Column("followers", sa.String(256)),
+                                sa.Column("genres", sa.String(256)),
+                                sa.Column("track_id", sa.String(256)),
+                                sa.Column("track_id_prev", sa.String(256)),
+                                sa.Column("type", sa.String(256)))
+
+
     logger.info("Creating spotify_albums table")
     spotify_albums_table = sa.Table("spotify_albums", meta,
                                 sa.Column("id", sa.String(256), primary_key=True),
@@ -134,11 +146,11 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
                                 sa.Column("artist_id", sa.String(256)),
                                 sa.Column("available_markets", sa.String(10240)),
                                 sa.Column("external_urls", sa.String(10240)),
-                                sa.Column("href", sa.StringString(10240)),
-                                sa.Column("images", sa.StringString(10240)),
+                                sa.Column("href", sa.String(10240)),
+                                sa.Column("images", sa.String(10240)),
                                 sa.Column("release_date", sa.String(256)),
-                                sa.Column("release_date_precision", sa.StringString(256)),
-                                sa.Column("total_tracks", sa.StringString(256)),
+                                sa.Column("release_date_precision", sa.String(256)),
+                                sa.Column("total_tracks", sa.String(256)),
                                 sa.Column("track_id", sa.String(256)),
                                 sa.Column("track_name_prev", sa.String(256)),
                                 sa.Column("uri", sa.String(256)),
@@ -149,6 +161,9 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
     if drop_first:
         logger.info("Dropping existing tables before creating new ones")
         meta.drop_all()
+
+    meta.create_all(checkfirst=True)
+    logger.info(meta.tables.keys())
 
 
 def main():
