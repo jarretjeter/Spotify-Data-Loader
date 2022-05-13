@@ -61,6 +61,7 @@ class DataLoader():
         df = self.df
         df.sort_values(by=column_name)
         
+
     def load_to_db(self, db_engine, db_table_name:str) -> None:
         """
         Loads the dataframe into a database table.
@@ -69,13 +70,10 @@ class DataLoader():
             db_engine (SqlAlchemy Engine): SqlAlchemy engine (or connection) to use to insert into database
             db_table_name (str): name of database table to insert to
         """
-        connection_method = "mysql+pymysql"
-        db_user = "root"
-        db_password = "mysql"
         db_host = "127.0.0.1"
-        db_port = 3306
-        db_name = "spotify"
-        db_engine = sa.create_engine(f"{connection_method}://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}", future=True)
+        db_user = "root"
+        db_pass = "mysql"
+        db_engine = db_engine(db_host, db_user, db_pass)
 
         metadata = sa.MetaData(bind=db_engine)
         logger.info("new metadata")
@@ -99,12 +97,10 @@ def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> s
         sa.engine.Engine: sqlalchemy engine
     """
     connection_method = "mysql+pymysql"
-    db_user = "root"
-    db_pass = "mysql"
-    db_host = "127.0.0.1"
     db_port = 3306
-    db_name = "spotify"
+
     sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}", future=True)
+
 
 
 def db_create_tables(db_engine, drop_first:bool = False) -> None:
