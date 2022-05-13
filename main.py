@@ -23,13 +23,20 @@ class DataLoader():
         df = pd.read_csv(filepath, header=0)
         # assign this class instance to the dateframe
         self.df = df
-        pass
 
     def head(self) -> None:
         """
         prints the head of the dataframe to console
         """
-        return self.df.head()
+        df = self.df
+        # return ldf.head()
+
+    def info(self):
+        """
+        calls pandas.info on the dataframe
+        """
+        df = self.df
+        return df.info()
 
     def add_index(self, index_name:str, column_names:list) -> None:
         """
@@ -59,7 +66,7 @@ class DataLoader():
             column_name (str): column name to sort by
         """
         df = self.df
-        df.sort_values(by=column_name)
+        return df.sort_values(by=column_name)
         
 
     def load_to_db(self, db_engine, db_table_name:str) -> None:
@@ -121,8 +128,8 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
 
     # your code to drop and create tables go here
     if drop_first:
-        logger.info("Dropping existing tables")
-        meta.drop_all
+        logger.info("Dropping existing tables before creating new ones")
+        meta.drop_all()
 
 
 def main():
