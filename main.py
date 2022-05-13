@@ -1,3 +1,5 @@
+from msilib import Table
+from importlib_metadata import metadata
 import pandas as pd
 import sqlalchemy as sa
 import logging
@@ -124,6 +126,23 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
     meta = sa.MetaData(bind=db_engine)
 
     # your code to define tables go in here
+    logger.info("Creating spotify_albums table")
+    spotify_albums_table = sa.Table("spotify_albums", meta,
+                                sa.Column("id", sa.String(256), primary_key=True),
+                                sa.Column("name", sa.String(256)),
+                                sa.Column("album_type", sa.String(256)),
+                                sa.Column("artist_id", sa.String(256)),
+                                sa.Column("available_markets", sa.String(10240)),
+                                sa.Column("external_urls", sa.String(10240)),
+                                sa.Column("href", sa.StringString(10240)),
+                                sa.Column("images", sa.StringString(10240)),
+                                sa.Column("release_date", sa.String(256)),
+                                sa.Column("release_date_precision", sa.StringString(256)),
+                                sa.Column("total_tracks", sa.StringString(256)),
+                                sa.Column("track_id", sa.String(256)),
+                                sa.Column("track_name_prev", sa.String(256)),
+                                sa.Column("uri", sa.String(256)),
+                                sa.Column("type", sa.String(256)))
     #   - Be careful, some of the columns like album.available_markets are very long. Make sure you give enough DB length for these. ie: 10240 (10kb)
 
     # your code to drop and create tables go here
