@@ -1,25 +1,37 @@
 import pandas as pd
 import sqlalchemy as sa
+import logging
+from logging import DEBUG, INFO
+import sys
 
+
+logging.basicConfig(format='[%(levelname)-5s][%(asctime)s][%(module)s:%(lineno)04d] : %(message)s',
+                    level=INFO,
+                    stream=sys.stderr)
+logger: logging.Logger = logging
 
 class DataLoader():
 
     def __init__(self, filepath:str) -> None:
         """
         Loads a CSV file path into a Dataframe
-
+        
         Args:
             filepath (str): file path to the CSV file
         """
+        # read the csv file into a dataframe using pandas
+        df = pd.read_csv(filepath, header=0)
+        # assign this class instance to the dateframe
+        self.df = df
         pass
 
     def head(self) -> None:
         """
         prints the head of the dataframe to console
         """
-        pass
+        return self.df.head()
 
-    def add_index(self, index_name:str, colum_names:list) -> None:
+    def add_index(self, index_name:str, column_names:list) -> None:
         """
         Create a dataframe index column from concatenating a series of column values. Column values are concatenated by a dash "-".
 
@@ -28,9 +40,16 @@ class DataLoader():
 
         Args:
             index_name (str): the index column name
-            colum_names (list): list of columns to concatenate into an index column
+            column_names (list): list of columns to concatenate into an index column
         """
-        pass
+        df = self.df
+        # use logger to log what the function is attempting to do
+        logger.info(f"\tAdding index {index_name}")
+        # concatenating the specified column values across the index
+        df[index_name] = df[column_names].apply(lambda row:"-".join(row.values.astype(str)), axis=1)
+        df.set_index(index_name, inplace=True)
+        self.df = df
+
 
     def sort(self, column_name:str) -> None:
         """
@@ -39,7 +58,9 @@ class DataLoader():
         Args:
             column_name (str): column name to sort by
         """
-
+        df = self.df
+        df.sort_values(by=column_name)
+        
     def load_to_db(self, db_engine, db_table_name:str) -> None:
         """
         Loads the dataframe into a database table.
@@ -48,6 +69,20 @@ class DataLoader():
             db_engine (SqlAlchemy Engine): SqlAlchemy engine (or connection) to use to insert into database
             db_table_name (str): name of database table to insert to
         """
+        connection_method = "mysql+pymysql"
+        db_user = "root"
+        db_password = "mysql"
+        db_host = "127.0.0.1"
+        db_port = 3306
+        db_name = "spotify"
+        db_engine = sa.create_engine(f"{connection_method}://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}", future=True)
+
+        metadata = sa.MetaData(bind=db_engine)
+        logger.info("new metadata")
+        conn = db_engine.connect()
+        self.engine = db_engine
+        self.conn = conn
+        self.metadata = metadata
 
 
 
@@ -63,7 +98,13 @@ def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> s
     Returns:
         sa.engine.Engine: sqlalchemy engine
     """
-    pass
+    connection_method = "mysql+pymysql"
+    db_user = "root"
+    db_pass = "mysql"
+    db_host = "127.0.0.1"
+    db_port = 3306
+    db_name = "spotify"
+    sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}", future=True)
 
 
 def db_create_tables(db_engine, drop_first:bool = False) -> None:
