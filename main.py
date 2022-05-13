@@ -29,7 +29,7 @@ class DataLoader():
         prints the head of the dataframe to console
         """
         df = self.df
-        # return ldf.head()
+        return df.head()
 
     def info(self):
         """
