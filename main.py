@@ -1,5 +1,3 @@
-from msilib import Table
-from importlib_metadata import metadata
 import pandas as pd
 import sqlalchemy as sa
 import logging
@@ -36,7 +34,7 @@ class DataLoader():
     def info(self):
         """
         calls pandas.info on the dataframe
-        """
+        # """
         df = self.df
         return df.info()
 
@@ -79,15 +77,15 @@ class DataLoader():
             db_engine (SqlAlchemy Engine): SqlAlchemy engine (or connection) to use to insert into database
             db_table_name (str): name of database table to insert to
         """
-        db_host = "127.0.0.1"
-        db_user = "root"
-        db_pass = "mysql"
-        db_engine = db_engine(db_host, db_user, db_pass)
 
+        db_engine()
+        df = self.df
+        # db_table_name.df.to_sql()
+        df.to_sql(db_table_name, db_engine)
         meta = sa.MetaData(bind=db_engine)
         logger.info("new metadata")
         conn = db_engine.connect()
-        self.engine = db_engine
+        self.Engine.engine = db_engine
         self.conn = conn
         self.meta = meta
 
@@ -106,9 +104,10 @@ def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> s
         sa.engine.Engine: sqlalchemy engine
     """
     connection_method = "mysql+pymysql"
-    db_port = 3306
-
-    sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}", future=True)
+    # db_host = "127.0.0.1:3306"
+    # db_user = "root"
+    # db_pass = "mysql"
+    sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}/{db_name}", future=True)
 
 
 
@@ -130,7 +129,7 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
     spotify_artists_table = sa.Table("spotify_artists", meta,
                                 sa.Column("id", sa.String(256), primary_key=True),
                                 sa.Column("name", sa.String(256)),
-                                sa.Column("artist_popularity", sa.String(256)),
+                                sa.Column("artist_popularity", sa.Integer),
                                 sa.Column("followers", sa.String(256)),
                                 sa.Column("genres", sa.String(256)),
                                 sa.Column("track_id", sa.String(256)),
@@ -150,7 +149,7 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
                                 sa.Column("images", sa.String(10240)),
                                 sa.Column("release_date", sa.String(256)),
                                 sa.Column("release_date_precision", sa.String(256)),
-                                sa.Column("total_tracks", sa.String(256)),
+                                sa.Column("total_tracks", sa.Integer),
                                 sa.Column("track_id", sa.String(256)),
                                 sa.Column("track_name_prev", sa.String(256)),
                                 sa.Column("uri", sa.String(256)),
@@ -164,7 +163,6 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
 
     meta.create_all(checkfirst=True)
     logger.info(meta.tables.keys())
-
 
 def main():
     """
@@ -180,8 +178,14 @@ def main():
     - creates database metadata tables/columns
     - loads both artists and albums into database
     """
-    pass
-
+    artists_df = DataLoader("./data/spotify_artists.csv")
+    albums_df = DataLoader("./data/spotify_albums.csv")
+    artists_df.head()
+    albums_df.head()
+    artists_df.add_index("id", ["id"])
+    albums_df.add_index("album", ["artist_id", "name", "release_date"])
+    artists_df.sort("name")
+    db_create_tables(db_engine("127.0.0.1:3306", "root", "mysql"))
 
 if __name__ == '__main__':
     main()
