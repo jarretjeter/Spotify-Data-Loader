@@ -1,7 +1,7 @@
 import pandas as pd
 import sqlalchemy as sa
 import logging
-from logging import DEBUG, INFO
+from logging import INFO
 import sys
 
 
@@ -21,7 +21,7 @@ class DataLoader():
         """
         # read the csv file into a dataframe using pandas
         df = pd.read_csv(filepath, header=0)
-        # assign this class instance to the dateframe
+        # assign this class instance to the dataframe
         self.df = df
 
     def head(self) -> None:
