@@ -107,7 +107,7 @@ def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> s
     # db_host = "127.0.0.1:3306"
     # db_user = "root"
     # db_pass = "mysql"
-    sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}/{db_name}", future=True)
+    return sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}/{db_name}", future=True)
 
 
 
@@ -160,13 +160,13 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
     if drop_first:
         logger.info("Dropping existing tables before creating new ones")
         meta.drop_all()
-
-    meta.create_all(checkfirst=True)
+    logger.info("create_all()")
+    meta.create_all(meta, checkfirst=True)
     logger.info(meta.tables.keys())
 
 def main():
     """
-    Pipeline Orchestratation method.
+    Pipeline Orchestration method.
 
     Performs the following:
     - Creates a DataLoader instance for artists and albums
@@ -185,7 +185,11 @@ def main():
     artists_df.add_index("id", ["id"])
     albums_df.add_index("album", ["artist_id", "name", "release_date"])
     artists_df.sort("name")
-    db_create_tables(db_engine("127.0.0.1:3306", "root", "mysql"))
+    engine = db_engine("127.0.0.1:3306", "root", "mysql")
+    engine.connect()
+    db_create_tables(engine)
+    artists_df.load_to_db(engine, "spotify_artists")
+    albums_df.load_to_db(engine, "spotify_albums")
 
 if __name__ == '__main__':
     main()
