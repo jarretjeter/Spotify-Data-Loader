@@ -29,7 +29,7 @@ _In the main.py file, a DataLoader class is defined with reusable code to read a
 
 ## Known Bugs
 
-* _Currently there is an AttributeError inside the main() function when the db_create_tables() function is reached._
+* _"Unnamed:0" column is still loaded to database even though the column is not defined in the sqlalchemy table schema_
 
 ## License
 
