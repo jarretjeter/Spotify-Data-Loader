@@ -5,7 +5,7 @@ import logging
 from logging import INFO
 import sys
 
-
+# configure logger for helpful debugging messages
 logging.basicConfig(format='[%(levelname)-5s][%(asctime)s][%(module)s:%(lineno)04d] : %(message)s',
                     level=INFO,
                     stream=sys.stderr)
@@ -22,20 +22,21 @@ class DataLoader():
         """
         # read the csv file into a dataframe using pandas
         df = pd.read_csv(filepath, header=0)
-        # assign this class instance to the dataframe
+        # assign this class instance variable to the dataframe 'df'
         self.df = df
 
     def head(self) -> None:
         """
         prints the head of the dataframe to console
         """
+        # assign 'df' variable of this specific method to the instance's dataframe
         df = self.df
         return df.head()
 
     def info(self):
         """
         calls pandas.info on the dataframe
-        # """
+        """
         df = self.df
         return df.info()
 
@@ -55,6 +56,7 @@ class DataLoader():
         logger.info(f"\tAdding index '{index_name}'")
         # concatenating the specified column values across the index
         df[index_name] = df[column_names].apply(lambda row:"-".join(row.values.astype(str)), axis=1)
+        # set newly created index name as the dataframe's index
         df.set_index(index_name, inplace=True)
         self.df = df
 
@@ -67,6 +69,7 @@ class DataLoader():
             column_name (str): column name to sort by
         """
         df = self.df
+        # sort by dataframe column values
         return df.sort_values(by=column_name)
         
 
@@ -81,6 +84,7 @@ class DataLoader():
         
         df = self.df
         logger.info(f"Loading {db_table_name} to database...")
+        # loads the sql tables created from the dataframe into a database using a sqlalchemy engine, replacing any tables that already exist
         df.to_sql(db_table_name, db_engine, if_exists="replace")
 
 
@@ -99,9 +103,8 @@ def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> s
         sa.engine.Engine: sqlalchemy engine
     """
     connection_method = "mysql+pymysql"
-
+    # create a sqlalchemy engine, assigning to variable 'engine'
     engine = sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}/{db_name}", future=True)
-    
     return engine
 
 
@@ -115,12 +118,12 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
         db_engine (SqlAlchemy Engine): SqlAlchemy engine to bind the metadata to.
         drop_first (bool): Drop the tables before creating them again first. Default to False
     """
-    
+    # create a sqlalchemy MetaData object to hold the information/structure of the tables to be created, and bind it to a sqlalchemy engine to send the information to a database
     meta = sa.MetaData(bind=db_engine)
     
 
-    # your code to define tables go in here
     logger.info("Creating spotify_artists table")
+    # defining the table name and its structure and columns
     spotify_artists_table = sa.Table("spotify_artists", meta,
                                 sa.Column("id", sa.String(256), primary_key=True),
                                 sa.Column("name", sa.String(256)),
@@ -149,14 +152,15 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
                                 sa.Column("track_name_prev", sa.String(256)),
                                 sa.Column("uri", sa.String(256)),
                                 sa.Column("type", sa.String(256)))
-    #   - Be careful, some of the columns like album.available_markets are very long. Make sure you give enough DB length for these. ie: 10240 (10kb)
 
-    # your code to drop and create tables go here
+                                
     if drop_first:
         logger.info("Dropping existing tables before creating new ones")
         meta.drop_all()
     logger.info("create_all()")
+    # using the metadata, create all the specified tables in the database that the engine is connected to
     meta.create_all(db_engine, checkfirst=True)
+    # log the names of the newly created tables
     logger.info(meta.tables.keys())
 
 def main():
@@ -173,20 +177,30 @@ def main():
     - creates database metadata tables/columns
     - loads both artists and albums into database
     """
+    # reading csv files into a dataframe with the DataLoader class
     artists_df = DataLoader("./data/spotify_artists.csv")
     albums_df = DataLoader("./data/spotify_albums.csv")
+
+    # performing pandas methods on the loaded dataframes
     artists_df.head()
     albums_df.head()
+    # here, the artists dataframe's 'id' column is set to the index
     artists_df.add_index("id", ["id"])
+    # here, a new index, 'album' is set combining the values of columns: 'name', 'artist_id', and 'release_date'
     albums_df.add_index("album", ["name","artist_id", "release_date"])
     artists_df.sort("name")
+
+    # creating engine to be used
     engine = db_engine("127.0.0.1:3306", "root", "mysql")
+    # open the engine connection
     engine.connect()
     db_create_tables(engine, drop_first=True)
+    # add engine to artists_df class instance
     artists_df.engine = engine
+    # load csv file to sql database with matching schema
     artists_df.load_to_db(engine, "spotify_artists")
+    # add engine to albums_df class instance
     albums_df.engine = engine
-    albums_df.engine.connect()
     albums_df.load_to_db(engine, "spotify_albums")
 
 if __name__ == '__main__':
