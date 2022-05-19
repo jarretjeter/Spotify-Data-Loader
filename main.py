@@ -1,3 +1,4 @@
+from importlib_metadata import metadata
 import pandas as pd
 import sqlalchemy as sa
 import logging
@@ -51,7 +52,7 @@ class DataLoader():
         """
         df = self.df
         # use logger to log what the function is attempting to do
-        logger.info(f"\tAdding index {index_name}")
+        logger.info(f"\tAdding index '{index_name}'")
         # concatenating the specified column values across the index
         df[index_name] = df[column_names].apply(lambda row:"-".join(row.values.astype(str)), axis=1)
         df.set_index(index_name, inplace=True)
@@ -77,17 +78,11 @@ class DataLoader():
             db_engine (SqlAlchemy Engine): SqlAlchemy engine (or connection) to use to insert into database
             db_table_name (str): name of database table to insert to
         """
-
-        db_engine()
+        
         df = self.df
-        # db_table_name.df.to_sql()
-        df.to_sql(db_table_name, db_engine)
-        meta = sa.MetaData(bind=db_engine)
-        logger.info("new metadata")
-        conn = db_engine.connect()
-        self.Engine.engine = db_engine
-        self.conn = conn
-        self.meta = meta
+        logger.info(f"Loading {db_table_name} to database...")
+        df.to_sql(db_table_name, db_engine, if_exists="replace")
+
 
 
 
@@ -95,7 +90,7 @@ def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> s
     """Using SqlAlchemy, create a database engine and return it
 
     Args:
-        db_host (str): datbase host and port settings
+        db_host (str): database host and port settings
         db_user (str): database user
         db_pass (str): database password
         db_name (str): database name, defaults to "spotify"
@@ -104,11 +99,10 @@ def db_engine(db_host:str, db_user:str, db_pass:str, db_name:str="spotify") -> s
         sa.engine.Engine: sqlalchemy engine
     """
     connection_method = "mysql+pymysql"
-    # db_host = "127.0.0.1:3306"
-    # db_user = "root"
-    # db_pass = "mysql"
-    return sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}/{db_name}", future=True)
 
+    engine = sa.create_engine(f"{connection_method}://{db_user}:{db_pass}@{db_host}/{db_name}", future=True)
+    
+    return engine
 
 
 def db_create_tables(db_engine, drop_first:bool = False) -> None:
@@ -123,6 +117,7 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
     """
     
     meta = sa.MetaData(bind=db_engine)
+    
 
     # your code to define tables go in here
     logger.info("Creating spotify_artists table")
@@ -143,10 +138,10 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
                                 sa.Column("name", sa.String(256)),
                                 sa.Column("album_type", sa.String(256)),
                                 sa.Column("artist_id", sa.String(256)),
-                                sa.Column("available_markets", sa.String(10240)),
-                                sa.Column("external_urls", sa.String(10240)),
-                                sa.Column("href", sa.String(10240)),
-                                sa.Column("images", sa.String(10240)),
+                                sa.Column("available_markets", sa.String(1000)),
+                                sa.Column("external_urls", sa.String(1000)),
+                                sa.Column("href", sa.String(1000)),
+                                sa.Column("images", sa.String(1000)),
                                 sa.Column("release_date", sa.String(256)),
                                 sa.Column("release_date_precision", sa.String(256)),
                                 sa.Column("total_tracks", sa.Integer),
@@ -161,7 +156,7 @@ def db_create_tables(db_engine, drop_first:bool = False) -> None:
         logger.info("Dropping existing tables before creating new ones")
         meta.drop_all()
     logger.info("create_all()")
-    meta.create_all(meta, checkfirst=True)
+    meta.create_all(db_engine, checkfirst=True)
     logger.info(meta.tables.keys())
 
 def main():
@@ -183,12 +178,15 @@ def main():
     artists_df.head()
     albums_df.head()
     artists_df.add_index("id", ["id"])
-    albums_df.add_index("album", ["artist_id", "name", "release_date"])
+    albums_df.add_index("album", ["name","artist_id", "release_date"])
     artists_df.sort("name")
     engine = db_engine("127.0.0.1:3306", "root", "mysql")
     engine.connect()
-    db_create_tables(engine)
+    db_create_tables(engine, drop_first=True)
+    artists_df.engine = engine
     artists_df.load_to_db(engine, "spotify_artists")
+    albums_df.engine = engine
+    albums_df.engine.connect()
     albums_df.load_to_db(engine, "spotify_albums")
 
 if __name__ == '__main__':
